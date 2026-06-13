@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tabuê</title>
+<style>
+  :root{
+    --ceu:#0b1d4d;
+    --ceu2:#13316f;
+    --estrela:#ffe66d;
+    --foguete:#ff5a5f;
+    --planeta:#5be8c6;
+    --roxo:#9b6bff;
+    --branco:#f7faff;
+    --acerto:#3ddc84;
+    --erro:#ff6b6b;
+    --sombra:0 10px 0 rgba(0,0,0,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Trebuchet MS","Comic Sans MS",system-ui,sans-serif;
+    background:radial-gradient(circle at 20% 10%, #1c3f8a 0%, var(--ceu) 45%, #060f2e 100%);
+    background-attachment:fixed;
+    color:var(--branco);
+    min-height:100%;
+    overflow-x:hidden;
+    -webkit-text-size-adjust:100%;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button{touch-action:manipulation}
+  /* estrelas de fundo */
+  .estrelas{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .estrelas span{position:absolute;width:3px;height:3px;background:#fff;border-radius:50%;opacity:.7;animation:pisca 2.4s infinite}
+  @keyframes pisca{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.2)}}
+  .wrap{position:relative;z-index:1;max-width:680px;margin:0 auto;padding:20px 16px 40px;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+  h1{font-size:clamp(28px,7vw,46px);text-align:center;color:var(--estrela);text-shadow:3px 3px 0 #00000040;letter-spacing:1px}
+  h1 .rocket{display:inline-block;animation:flutua 2s ease-in-out infinite}
+  @keyframes flutua{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-8px) rotate(-2deg)}}
+  .sub{text-align:center;color:#c7d6ff;margin-top:4px;font-size:15px}
+  .card{
+    background:linear-gradient(180deg,var(--ceu2),#0e2557);
+    border:3px solid #2b4ea0;border-radius:24px;padding:22px;margin-top:22px;
+    box-shadow:var(--sombra);
+  }
+  label{display:block;font-weight:bold;margin:14px 0 6px;color:#cfe0ff}
+  input{
+    width:100%;padding:14px 16px;border-radius:14px;border:3px solid #2b4ea0;
+    background:#0a1c45;color:#fff;font-size:17px;font-family:inherit;
+  }
+  input:focus{outline:none;border-color:var(--estrela)}
+  .erro-msg{color:var(--erro);font-size:14px;margin-top:6px;min-height:18px}
+  button{
+    font-family:inherit;cursor:pointer;border:none;border-radius:18px;font-weight:bold;
+    transition:transform .08s;
+  }
+  button:active{transform:translateY(3px)}
+  .btn-grande{
+    width:100%;padding:18px;font-size:20px;background:var(--foguete);color:#fff;
+    box-shadow:0 6px 0 #c43e42;margin-top:18px;
+  }
+  .btn-grande:active{box-shadow:0 2px 0 #c43e42}
+  .btn-sec{background:var(--roxo);box-shadow:0 6px 0 #6e44c9;color:#fff}
+  .btn-sec:active{box-shadow:0 2px 0 #6e44c9}
+  .btn-verde{background:var(--acerto);box-shadow:0 6px 0 #25a35f;color:#06371f}
+  .btn-verde:active{box-shadow:0 2px 0 #25a35f}
+  .hidden{display:none!important}
+
+  /* seletor de tabuadas */
+  .tab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:10px;margin-top:10px}
+  .tab-chip{
+    padding:16px 0;text-align:center;font-size:22px;font-weight:bold;border-radius:16px;
+    background:#0a1c45;border:3px solid #2b4ea0;color:#cfe0ff;cursor:pointer;user-select:none;
+  }
+  .tab-chip.on{background:var(--estrela);color:#3a2c00;border-color:#fff;transform:scale(1.04)}
+  .mini-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .mini-row button{flex:1;padding:12px;font-size:14px;background:#0a1c45;border:2px solid #2b4ea0;color:#cfe0ff}
+
+  /* jogo */
+  .hud{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .pill{background:#0a1c45;border:3px solid #2b4ea0;border-radius:999px;padding:8px 16px;font-weight:bold}
+  .pill.estrela{border-color:var(--estrela);color:var(--estrela)}
+  .pill.vida{border-color:var(--foguete)}
+  .pill.sair{border-color:var(--foguete);color:var(--foguete);cursor:pointer;background:#0a1c45;font-family:inherit}
+  .pill.sair:active{transform:translateY(2px)}
+  .barra{height:14px;background:#0a1c45;border-radius:999px;overflow:hidden;border:2px solid #2b4ea0;margin-bottom:16px}
+  .barra>i{display:block;height:100%;background:linear-gradient(90deg,var(--planeta),var(--estrela));width:0;transition:width .3s}
+  .conta{font-size:clamp(46px,15vw,90px);text-align:center;font-weight:bold;color:#fff;text-shadow:4px 4px 0 #00000050;margin:10px 0 6px}
+  /* barra de tempo do bônus */
+  .tempo-rotulo{display:flex;justify-content:space-between;font-size:13px;font-weight:bold;color:#cfe0ff;margin:4px 2px 5px}
+  .tempo-rotulo #j-tempo-seg{color:var(--estrela)}
+  .tempo-barra{height:16px;background:#0a1c45;border-radius:999px;overflow:hidden;border:2px solid #2b4ea0;margin-bottom:14px}
+  .tempo-barra>i{display:block;height:100%;width:100%;border-radius:999px;background:var(--acerto);transition:width .1s linear,background-color .3s}
+  .tempo-barra.acabando{animation:piscaTempo .45s steps(1) infinite}
+  @keyframes piscaTempo{0%{opacity:1}50%{opacity:.25}100%{opacity:1}}
+  .tempo-barra.expirado>i{width:0!important}
+  .resposta-box{display:flex;gap:10px;align-items:stretch}
+  .resposta-box input{font-size:34px;text-align:center;font-weight:bold;letter-spacing:2px}
+  .feedback{text-align:center;font-size:22px;font-weight:bold;min-height:30px;margin-top:14px}
+  .teclado{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+  .teclado button{padding:18px;font-size:24px;background:#13316f;border:3px solid #2b4ea0;color:#fff;box-shadow:0 5px 0 #0a1c45}
+  .teclado button:active{box-shadow:0 1px 0 #0a1c45}
+  .teclado .acao{background:var(--roxo);box-shadow:0 5px 0 #6e44c9}
+
+  /* resultado */
+  .stat{display:flex;justify-content:space-between;padding:12px 4px;border-bottom:2px dashed #2b4ea0;font-size:17px}
+  .stat b{color:var(--estrela)}
+  /* estrelas do resultado */
+  .estrelas-result{display:flex;justify-content:center;gap:8px;margin:4px 0 6px}
+  .estrelas-result .est{font-size:clamp(52px,16vw,84px);line-height:1;color:#22366e;transition:none;transform:scale(0)}
+  .estrelas-result .est.cheia{color:var(--estrela);text-shadow:0 0 18px rgba(255,230,109,.8)}
+  .estrelas-result .est.surge{animation:estrelaPop .5s cubic-bezier(.2,1.4,.4,1) forwards}
+  .estrelas-result .est.surge.cheia{animation:estrelaPop .5s cubic-bezier(.2,1.4,.4,1) forwards, brilho 1.4s ease-in-out .5s infinite}
+  @keyframes estrelaPop{0%{transform:scale(0) rotate(-40deg)}70%{transform:scale(1.35) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+  @keyframes brilho{0%,100%{text-shadow:0 0 18px rgba(255,230,109,.8);transform:scale(1)}50%{text-shadow:0 0 30px rgba(255,230,109,1);transform:scale(1.08)}}
+  /* placar */
+  .placar{text-align:center;margin:8px 0 4px}
+  .placar-num{font-size:clamp(56px,18vw,88px);font-weight:bold;color:var(--estrela);text-shadow:3px 3px 0 #00000040;line-height:1}
+  .placar-de{font-size:clamp(22px,6vw,34px);color:#7e93c9}
+  .placar-lbl{font-size:16px;color:#cfe0ff;letter-spacing:2px;text-transform:uppercase}
+  .acertos-destaque{text-align:center;font-size:20px;font-weight:bold;color:var(--branco);margin:6px 0 12px}
+  .pontos-quebra{background:#0a1c45;border:2px solid #2b4ea0;border-radius:14px;padding:6px 14px;margin-bottom:12px}
+  .pontos-quebra .linha{display:flex;justify-content:space-between;padding:8px 0;font-size:15px;border-bottom:1px solid #1c356e}
+  .pontos-quebra .linha:last-child{border-bottom:none}
+  .pontos-quebra .linha b{color:var(--estrela)}
+  .pontos-quebra .linha.zero{opacity:.4}
+  .pontos-quebra .linha.destaque{font-size:18px}
+  .pontos-quebra .linha.destaque b{font-size:20px}
+  .pontos-quebra .linha.sep{border-top:2px dashed #2b4ea0;margin-top:2px}
+
+  /* historico */
+  .hist-item{background:#0a1c45;border:2px solid #2b4ea0;border-radius:14px;padding:12px 14px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .hist-item .data{font-size:13px;color:#9fb4e8}
+  .hist-item .pts{font-size:22px;font-weight:bold;color:var(--estrela)}
+
+  /* perfis */
+  .perfil-item{display:flex;align-items:center;gap:14px;background:#0a1c45;border:3px solid #2b4ea0;border-radius:18px;padding:14px;margin-top:12px;cursor:pointer}
+  .perfil-item:active{transform:translateY(2px)}
+  .perfil-item .avatar{font-size:34px;width:54px;height:54px;display:flex;align-items:center;justify-content:center;background:#13316f;border-radius:50%;flex-shrink:0}
+  .perfil-item .info{flex:1}
+  .perfil-item .info .ap{font-size:20px;font-weight:bold;color:var(--estrela)}
+  .perfil-item .info .det{font-size:13px;color:#9fb4e8}
+  .perfil-item .apagar{background:transparent;border:none;color:var(--foguete);font-size:22px;padding:6px 10px;cursor:pointer}
+  .vazio{text-align:center;color:#9fb4e8;padding:20px 0}
+
+  .topo-nav{display:flex;gap:10px;margin-top:18px}
+  .topo-nav button{flex:1;padding:14px;font-size:15px;background:#13316f;border:2px solid #2b4ea0;color:#cfe0ff}
+
+  .saudacao{text-align:center;margin-bottom:6px}
+  .saudacao .nome{color:var(--estrela);font-size:24px;font-weight:bold}
+  .saudacao .idade{color:#cfe0ff;font-size:15px}
+
+  /* confete */
+  .confete{position:fixed;top:-10px;width:10px;height:16px;z-index:50;pointer-events:none}
+  @keyframes cai{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+  /* rodapé */
+  .rodape{text-align:center;color:#8fa3d6;font-size:13px;margin-top:26px;padding:14px 0 max(10px,env(safe-area-inset-bottom))}
+  .rodape b{color:var(--estrela);font-weight:bold}
+
+  /* ---- responsivo: celulares ---- */
+  @media (max-width:480px){
+    .wrap{padding-top:14px}
+    .card{padding:18px 15px;border-radius:20px;margin-top:16px}
+    .sub{font-size:14px}
+    input{font-size:16px;padding:13px 14px} /* 16px evita zoom automático no iOS */
+    .resposta-box input{font-size:30px}
+    .teclado{gap:8px}
+    .teclado button{padding:16px;font-size:22px}
+    .tab-grid{grid-template-columns:repeat(5,1fr);gap:8px}
+    .tab-chip{padding:13px 0;font-size:19px}
+    .conta{margin:6px 0 4px}
+    .hud{gap:6px}
+    .pill{padding:7px 12px;font-size:14px}
+    .stat{font-size:16px;padding:11px 2px}
+  }
+  /* telas bem estreitas */
+  @media (max-width:340px){
+    .teclado button{padding:13px;font-size:20px}
+    .pill{padding:6px 9px;font-size:13px}
+  }
+  /* ---- tablets: um pouco mais de respiro ---- */
+  @media (min-width:700px){
+    .teclado button{padding:22px;font-size:28px}
+    .conta{margin:14px 0 8px}
+  }
+  /* altura curta (paisagem no celular): compacta o vertical */
+  @media (max-height:560px){
+    .conta{font-size:clamp(34px,11vw,56px);margin:2px 0}
+    .teclado button{padding:11px;font-size:20px}
+    .tempo-barra{margin-bottom:8px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms!important;animation-iteration-count:1!important}
+  }
+</style>
+</head>
+<body>
+<div class="estrelas" id="estrelas"></div>
+<div class="wrap">
+  <h1><span class="rocket">🚀</span> Tabuê</h1>
+  <p class="sub">A tabuada que vira jogo!</p>
+
+  <!-- SELEÇÃO DE PERFIL -->
+  <section id="tela-perfis" class="card hidden">
+    <h2 style="text-align:center;margin-bottom:6px">🎮 Quem vai jogar?</h2>
+    <p class="sub" style="margin-bottom:8px">Escolha seu jogador</p>
+    <div id="perfis-lista"></div>
+    <button class="btn-grande btn-sec" onclick="novoCadastro()">➕ Novo jogador</button>
+  </section>
+
+  <!-- CADASTRO -->
+  <section id="tela-cadastro" class="card">
+    <h2 style="text-align:center;margin-bottom:6px">🎮 Crie seu jogador</h2>
+    <p class="sub" style="margin-bottom:8px">Preencha para começar a jogar</p>
+    <label for="c-nome">Nome completo</label>
+    <input id="c-nome" type="text" placeholder="Ex: João Pedro da Silva" autocomplete="off">
+    <label for="c-apelido">Apelido</label>
+    <input id="c-apelido" type="text" placeholder="Como gosta de ser chamado?" autocomplete="off">
+    <label for="c-nasc">Data de nascimento</label>
+    <input id="c-nasc" type="date">
+    <div class="erro-msg" id="cad-erro"></div>
+    <button class="btn-grande" onclick="salvarCadastro()">🚀 Começar a jogar</button>
+    <button id="cad-voltar" class="topo-nav-btn hidden" style="width:100%;padding:14px;margin-top:10px;background:#13316f;border:2px solid #2b4ea0;color:#cfe0ff;font-size:15px" onclick="mostrar('tela-perfis');renderPerfis()">⬅️ Voltar para a lista</button>
+  </section>
+
+  <!-- MENU / ESCOLHA -->
+  <section id="tela-menu" class="card hidden">
+    <div class="saudacao">
+      <div class="nome" id="m-nome">Olá!</div>
+      <div class="idade" id="m-idade"></div>
+    </div>
+    <label>Escolha as tabuadas que quer praticar:</label>
+    <div class="tab-grid" id="tab-grid"></div>
+    <div class="mini-row">
+      <button onclick="selecionarTab('todas')">Todas</button>
+      <button onclick="selecionarTab('faceis')">Fáceis (2-5)</button>
+      <button onclick="selecionarTab('limpar')">Limpar</button>
+    </div>
+    <label style="margin-top:18px">Quantas perguntas?</label>
+    <div class="mini-row" id="qtd-row"></div>
+    <button class="btn-grande" onclick="iniciarJogo()">▶️ Iniciar tarefa</button>
+    <div class="topo-nav">
+      <button onclick="mostrar('tela-historico');renderHistorico()">📜 Histórico</button>
+      <button onclick="trocarUsuario()">🔄 Trocar jogador</button>
+    </div>
+  </section>
+
+  <!-- JOGO -->
+  <section id="tela-jogo" class="card hidden">
+    <div class="hud">
+      <span class="pill estrela">⭐ <span id="j-pontos">0</span></span>
+      <span class="pill">🎯 <span id="j-progresso">1/10</span></span>
+      <span class="pill vida">🔥 <span id="j-seq">0</span></span>
+      <button class="pill sair" onclick="sairDaAtividade()">✖ Sair</button>
+    </div>
+    <div class="barra"><i id="j-barra"></i></div>
+    <div class="conta" id="j-conta">3 × 4</div>
+    <div class="tempo-rotulo"><span>⚡ Bônus de velocidade</span><span id="j-tempo-seg">10s</span></div>
+    <div class="tempo-barra"><i id="j-tempo"></i></div>
+    <div class="resposta-box">
+      <input id="j-resposta" type="text" inputmode="none" readonly placeholder="?">
+    </div>
+    <div class="feedback" id="j-feedback"></div>
+    <div class="teclado" id="teclado"></div>
+  </section>
+
+  <!-- RESULTADO -->
+  <section id="tela-resultado" class="card hidden">
+    <div class="estrelas-result" id="r-estrelas">
+      <span class="est" data-i="0">★</span>
+      <span class="est" data-i="1">★</span>
+      <span class="est" data-i="2">★</span>
+    </div>
+    <h2 style="text-align:center" id="r-titulo">Rodada concluída!</h2>
+    <div class="placar">
+      <div class="placar-num"><span id="r-nota">0</span><span class="placar-de">/100</span></div>
+      <div class="placar-lbl">nota</div>
+    </div>
+    <div class="acertos-destaque" id="r-acertos-dest">Você acertou 0 de 0</div>
+    <div class="pontos-quebra" id="r-quebra"></div>
+    <div class="stat"><span>❌ Erros</span><b id="r-erros">0</b></div>
+    <div class="stat"><span>🔥 Melhor sequência</span><b id="r-seq">0</b></div>
+    <div class="stat"><span>⏱️ Tempo</span><b id="r-tempo">0s</b></div>
+    <div class="stat"><span>📚 Tabuadas</span><b id="r-tabs">-</b></div>
+    <button class="btn-grande btn-verde" onclick="iniciarJogo()">🔁 Jogar de novo</button>
+    <div class="topo-nav">
+      <button onclick="mostrar('tela-menu')">🏠 Menu</button>
+      <button onclick="mostrar('tela-historico');renderHistorico()">📜 Histórico</button>
+    </div>
+  </section>
+
+  <!-- HISTORICO -->
+  <section id="tela-historico" class="card hidden">
+    <h2 style="text-align:center;margin-bottom:4px">📜 Minhas rodadas</h2>
+    <div id="hist-resumo" class="sub" style="margin-bottom:8px"></div>
+    <div id="hist-lista"></div>
+    <button class="btn-grande btn-sec" onclick="mostrar('tela-menu')">⬅️ Voltar ao menu</button>
+    <div class="topo-nav">
+      <button onclick="limparHistorico()">🗑️ Limpar histórico</button>
+    </div>
+  </section>
+
+  <footer class="rodape">Desenvolvido por <b>Alexandre Gaklik</b></footer>
+</div>
+
+<script>
+/* ---------- estrelas de fundo ---------- */
+(function(){
+  const c=document.getElementById('estrelas');
+  for(let i=0;i<60;i++){
+    const s=document.createElement('span');
+    s.style.left=Math.random()*100+'%';
+    s.style.top=Math.random()*100+'%';
+    s.style.animationDelay=(Math.random()*2.4)+'s';
+    c.appendChild(s);
+  }
+})();
+
+/* ---------- armazenamento (múltiplos perfis) ---------- */
+const DB={
+  perfis(){try{return JSON.parse(localStorage.getItem('ft_perfis'))||[]}catch(e){return []}},
+  salvarPerfis(p){localStorage.setItem('ft_perfis',JSON.stringify(p))},
+  addPerfil(u){const p=this.perfis();p.push(u);this.salvarPerfis(p);return u.id},
+  removerPerfil(id){
+    this.salvarPerfis(this.perfis().filter(u=>u.id!==id));
+    localStorage.removeItem('ft_hist_'+id);
+    if(this.atualId()===id)localStorage.removeItem('ft_atual');
+  },
+  atualId(){return localStorage.getItem('ft_atual')},
+  setAtual(id){localStorage.setItem('ft_atual',id)},
+  user(){const id=this.atualId();return this.perfis().find(u=>u.id===id)||null},
+  hist(){const id=this.atualId();try{return JSON.parse(localStorage.getItem('ft_hist_'+id))||[]}catch(e){return []}},
+  addHist(r){const id=this.atualId();const h=this.hist();h.unshift(r);localStorage.setItem('ft_hist_'+id,JSON.stringify(h.slice(0,50)))},
+  clearHist(){const id=this.atualId();localStorage.removeItem('ft_hist_'+id)}
+};
+
+/* ---------- navegação ---------- */
+const telas=['tela-perfis','tela-cadastro','tela-menu','tela-jogo','tela-resultado','tela-historico'];
+function mostrar(id){telas.forEach(t=>document.getElementById(t).classList.toggle('hidden',t!==id));window.scrollTo(0,0)}
+
+/* ---------- idade ---------- */
+function calcIdade(nasc){
+  if(!nasc)return null;
+  const d=new Date(nasc),h=new Date();
+  let a=h.getFullYear()-d.getFullYear();
+  const m=h.getMonth()-d.getMonth();
+  if(m<0||(m===0&&h.getDate()<d.getDate()))a--;
+  return a;
+}
+
+/* ---------- perfis ---------- */
+const AVATARES=['🚀','👨‍🚀','👩‍🚀','🛸','🪐','🌟','🌍','☄️','🌜','👽'];
+function avatarDe(id){let s=0;for(const c of String(id))s+=c.charCodeAt(0);return AVATARES[s%AVATARES.length]}
+
+function renderPerfis(){
+  const p=DB.perfis();
+  const lista=document.getElementById('perfis-lista');
+  lista.innerHTML='';
+  p.forEach(u=>{
+    const idade=calcIdade(u.nasc);
+    const el=document.createElement('div');
+    el.className='perfil-item';
+    el.onclick=()=>escolherPerfil(u.id);
+    el.innerHTML='<div class="avatar">'+avatarDe(u.id)+'</div>'+
+      '<div class="info"><div class="ap">'+u.apelido+'</div>'+
+      '<div class="det">'+u.nome+(idade!=null?(' • '+idade+' anos'):'')+'</div></div>'+
+      '<button class="apagar" title="Apagar" onclick="event.stopPropagation();apagarPerfil(\''+u.id+'\')">🗑️</button>';
+    lista.appendChild(el);
+  });
+}
+function escolherPerfil(id){DB.setAtual(id);irMenu()}
+function apagarPerfil(id){
+  const u=DB.perfis().find(x=>x.id===id);
+  if(confirm('Apagar o jogador "'+(u?u.apelido:'')+'"? O histórico dele também será apagado.')){
+    DB.removerPerfil(id);
+    DB.perfis().length?renderPerfis():novoCadastro();
+  }
+}
+function novoCadastro(){
+  document.querySelectorAll('#tela-cadastro input').forEach(i=>i.value='');
+  document.getElementById('cad-erro').textContent='';
+  document.getElementById('cad-voltar').classList.toggle('hidden',DB.perfis().length===0);
+  mostrar('tela-cadastro');
+}
+
+/* ---------- cadastro ---------- */
+function salvarCadastro(){
+  const nome=document.getElementById('c-nome').value.trim();
+  const apelido=document.getElementById('c-apelido').value.trim();
+  const nasc=document.getElementById('c-nasc').value;
+  const e=document.getElementById('cad-erro');
+  if(!nome||nome.split(' ').length<2){e.textContent='Escreva o nome completo (nome e sobrenome).';return}
+  if(!apelido){e.textContent='Escreva um apelido.';return}
+  if(!nasc){e.textContent='Escolha a data de nascimento.';return}
+  e.textContent='';
+  const id='u'+Date.now()+Math.floor(Math.random()*1000);
+  DB.addPerfil({id,nome,apelido,nasc,criado:Date.now()});
+  DB.setAtual(id);
+  irMenu();
+}
+
+function trocarUsuario(){
+  renderPerfis();
+  mostrar('tela-perfis');
+}
+
+/* ---------- menu ---------- */
+let tabSelecionadas=new Set([2,3]);
+let qtdEscolhida=10;
+const opcoesQtd=[5,10,15,20];
+
+function montarMenu(){
+  const u=DB.user();
+  const idade=calcIdade(u.nasc);
+  document.getElementById('m-nome').textContent='Olá, '+u.apelido+'! 👋';
+  document.getElementById('m-idade').textContent=idade!=null?(idade+' anos • pronta(o) para jogar?'):'';
+  const g=document.getElementById('tab-grid');g.innerHTML='';
+  for(let n=1;n<=10;n++){
+    const c=document.createElement('div');
+    c.className='tab-chip'+(tabSelecionadas.has(n)?' on':'');
+    c.textContent=n;
+    c.onclick=()=>{tabSelecionadas.has(n)?tabSelecionadas.delete(n):tabSelecionadas.add(n);c.classList.toggle('on')};
+    g.appendChild(c);
+  }
+  const q=document.getElementById('qtd-row');q.innerHTML='';
+  opcoesQtd.forEach(v=>{
+    const b=document.createElement('button');
+    b.textContent=v+' perg.';
+    b.style.background=v===qtdEscolhida?'var(--estrela)':'#0a1c45';
+    b.style.color=v===qtdEscolhida?'#3a2c00':'#cfe0ff';
+    b.onclick=()=>{qtdEscolhida=v;montarMenu()};
+    q.appendChild(b);
+  });
+}
+function selecionarTab(modo){
+  if(modo==='todas')tabSelecionadas=new Set([1,2,3,4,5,6,7,8,9,10]);
+  if(modo==='faceis')tabSelecionadas=new Set([2,3,4,5]);
+  if(modo==='limpar')tabSelecionadas=new Set();
+  montarMenu();
+}
+function irMenu(){montarMenu();mostrar('tela-menu')}
+
+/* ---------- jogo ---------- */
+let jogo=null;
+const BONUS_MS=10000; // 10 segundos para ganhar o bônus de velocidade
+let timerId=null;
+
+function pararTimer(){
+  if(timerId){cancelAnimationFrame(timerId);timerId=null;}
+}
+function iniciarTimer(){
+  pararTimer();
+  const barra=document.getElementById('j-tempo');
+  const wrap=barra.parentElement;
+  const segEl=document.getElementById('j-tempo-seg');
+  wrap.classList.remove('acabando','expirado');
+  const t0=Date.now();
+  function frame(){
+    const dec=Date.now()-t0;
+    const restante=Math.max(0,BONUS_MS-dec);
+    const pct=restante/BONUS_MS; // 1 -> 0
+    barra.style.width=(pct*100)+'%';
+    // cor: verde -> amarelo -> vermelho
+    const hue=Math.round(120*pct); // 120=verde, 0=vermelho
+    barra.style.backgroundColor='hsl('+hue+',85%,52%)';
+    segEl.textContent=Math.ceil(restante/1000)+'s';
+    // piscar nos últimos 3 segundos
+    wrap.classList.toggle('acabando',restante>0&&restante<=3000);
+    if(restante<=0){
+      wrap.classList.remove('acabando');
+      wrap.classList.add('expirado');
+      segEl.textContent='⏱️';
+      timerId=null;
+      return;
+    }
+    timerId=requestAnimationFrame(frame);
+  }
+  timerId=requestAnimationFrame(frame);
+}
+
+function novaPergunta(){
+  const tabs=[...tabSelecionadas];
+  const a=tabs[Math.floor(Math.random()*tabs.length)];
+  const b=Math.floor(Math.random()*10)+1;
+  // evita repetir igual à anterior
+  if(jogo.ultima===a+'x'+b)return novaPergunta();
+  jogo.ultima=a+'x'+b;
+  jogo.a=a;jogo.b=b;jogo.inicioPergunta=Date.now();
+  document.getElementById('j-conta').textContent=a+' × '+b;
+  document.getElementById('j-resposta').value='';
+  document.getElementById('j-feedback').textContent='';
+  atualizarHud();
+  iniciarTimer();
+}
+function atualizarHud(){
+  document.getElementById('j-pontos').textContent=jogo.pontos;
+  document.getElementById('j-progresso').textContent=(jogo.idx+1)+'/'+jogo.total;
+  document.getElementById('j-seq').textContent=jogo.seq;
+  document.getElementById('j-barra').style.width=(jogo.idx/jogo.total*100)+'%';
+}
+function iniciarJogo(){
+  if(tabSelecionadas.size===0){alert('Escolha pelo menos uma tabuada no menu!');mostrar('tela-menu');montarMenu();return}
+  jogo={total:qtdEscolhida,idx:0,pontos:0,acertos:0,erros:0,seq:0,melhorSeq:0,inicio:Date.now(),ultima:'',tabs:[...tabSelecionadas].sort((x,y)=>x-y),ptBase:0,ptVel:0,ptCombo:0};
+  montarTeclado();
+  mostrar('tela-jogo');
+  novaPergunta();
+}
+function montarTeclado(){
+  const t=document.getElementById('teclado');t.innerHTML='';
+  ['1','2','3','4','5','6','7','8','9','apagar','0','ok'].forEach(k=>{
+    const b=document.createElement('button');
+    if(k==='apagar'){b.textContent='⌫';b.className='acao';b.onclick=()=>{const r=document.getElementById('j-resposta');r.value=r.value.slice(0,-1)}}
+    else if(k==='ok'){b.textContent='OK';b.className='acao';b.onclick=responder}
+    else{b.textContent=k;b.onclick=()=>{const r=document.getElementById('j-resposta');if(r.value.length<4)r.value+=k}}
+    t.appendChild(b);
+  });
+}
+function responder(){
+  const r=document.getElementById('j-resposta');
+  if(r.value==='')return;
+  pararTimer();
+  const val=parseInt(r.value,10);
+  const certo=jogo.a*jogo.b;
+  const fb=document.getElementById('j-feedback');
+  if(val===certo){
+    jogo.acertos++;jogo.seq++;jogo.melhorSeq=Math.max(jogo.melhorSeq,jogo.seq);
+    const rapido=(Date.now()-jogo.inicioPergunta)<BONUS_MS;
+    const bCombo=jogo.seq>=3?5:0;
+    const bVel=rapido?5:0;
+    let ganho=10+bCombo+bVel;
+    jogo.ptBase+=10;jogo.ptVel+=bVel;jogo.ptCombo+=bCombo;
+    jogo.pontos+=ganho;
+    const elogios=['Perfeito!','Mandou bem!','Isso aí!','Voando alto!','Gênio!'];
+    let extra='';
+    if(rapido)extra+=' ⚡';
+    if(jogo.seq>=3)extra+=' 🔥';
+    fb.style.color='var(--acerto)';
+    fb.textContent=elogios[Math.floor(Math.random()*elogios.length)]+' +'+ganho+extra;
+    confete();
+  }else{
+    jogo.erros++;jogo.seq=0;
+    fb.style.color='var(--erro)';
+    fb.textContent='Quase! '+jogo.a+' × '+jogo.b+' = '+certo;
+  }
+  jogo.idx++;
+  atualizarHud();
+  setTimeout(()=>{ jogo.idx>=jogo.total ? finalizar() : novaPergunta(); }, val===certo?700:1500);
+}
+function sairDaAtividade(){
+  if(confirm('Quer mesmo sair da rodada? Os pontos não serão salvos.')){
+    pararTimer();
+    jogo=null;
+    mostrar('tela-menu');
+    montarMenu();
+  }
+}
+function finalizar(){
+  pararTimer();
+  const tempo=Math.round((Date.now()-jogo.inicio)/1000);
+  const pct=jogo.acertos/jogo.total;
+  const nota=Math.round(pct*100); // nota de 0 a 100, só por acertos
+  // estrelas: 3 = 100%, 2 = 80%+, 1 = 50%+, 0 abaixo
+  let estrelas=0;
+  if(pct===1)estrelas=3;
+  else if(pct>=.8)estrelas=2;
+  else if(pct>=.5)estrelas=1;
+
+  const reg={data:Date.now(),nota,pontos:jogo.pontos,acertos:jogo.acertos,erros:jogo.erros,total:jogo.total,melhorSeq:jogo.melhorSeq,tempo,tabs:jogo.tabs,estrelas};
+  DB.addHist(reg);
+
+  let tit='Continue praticando!';
+  if(estrelas===3)tit='PERFEITO! Nota máxima! 🎉';
+  else if(estrelas===2)tit='Muito bem! Quase lá!';
+  else if(estrelas===1)tit='Boa! Você está aprendendo!';
+
+  document.getElementById('r-titulo').textContent=tit;
+  document.getElementById('r-nota').textContent=nota;
+  document.getElementById('r-acertos-dest').textContent='Você acertou '+jogo.acertos+' de '+jogo.total;
+  document.getElementById('r-erros').textContent=jogo.erros;
+  document.getElementById('r-seq').textContent=jogo.melhorSeq;
+  document.getElementById('r-tempo').textContent=tempo+'s';
+  document.getElementById('r-tabs').textContent=jogo.tabs.join(', ');
+
+  // detalhamento: nota por acertos + pontos de bônus separados
+  const q=document.getElementById('r-quebra');
+  q.innerHTML=
+    '<div class="linha"><span>✅ Acertos</span><b>'+jogo.acertos+' de '+jogo.total+'</b></div>'+
+    '<div class="linha destaque"><span>📊 Nota</span><b>'+nota+'/100</b></div>'+
+    '<div class="linha sep'+(jogo.ptVel?'':' zero')+'"><span>⚡ Pontos por velocidade</span><b>+'+jogo.ptVel+'</b></div>'+
+    '<div class="linha'+(jogo.ptCombo?'':' zero')+'"><span>🔥 Pontos por combo</span><b>+'+jogo.ptCombo+'</b></div>'+
+    '<div class="linha"><span>⭐ Pontos bônus</span><b>'+(jogo.ptVel+jogo.ptCombo)+'</b></div>';
+
+  mostrar('tela-resultado');
+  animarEstrelas(estrelas);
+  if(estrelas>=2)for(let i=0;i<20;i++)setTimeout(confete,i*80);
+  if(estrelas===3)for(let i=0;i<40;i++)setTimeout(confete,400+i*60);
+}
+
+function animarEstrelas(qtd){
+  const els=document.querySelectorAll('#r-estrelas .est');
+  els.forEach(e=>{e.className='est';e.style.transform='scale(0)'});
+  els.forEach((e,i)=>{
+    setTimeout(()=>{
+      e.classList.add('surge');
+      if(i<qtd)e.classList.add('cheia');
+    }, 350+i*350);
+  });
+}
+
+/* ---------- confete ---------- */
+function confete(){
+  const cores=['#ffe66d','#ff5a5f','#5be8c6','#9b6bff','#3ddc84'];
+  const d=document.createElement('div');
+  d.className='confete';
+  d.style.left=Math.random()*100+'vw';
+  d.style.background=cores[Math.floor(Math.random()*cores.length)];
+  d.style.animation='cai '+(1.4+Math.random())+'s linear forwards';
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),2400);
+}
+
+/* ---------- histórico ---------- */
+function renderHistorico(){
+  const h=DB.hist();
+  const lista=document.getElementById('hist-lista');
+  const resumo=document.getElementById('hist-resumo');
+  if(h.length===0){lista.innerHTML='<div class="vazio">Nenhuma rodada ainda. Bora jogar! 🚀</div>';resumo.textContent='';return}
+  const notas=h.map(r=>(r.nota!=null)?r.nota:Math.round((r.acertos/r.total)*100));
+  const melhorNota=Math.max(...notas);
+  const mediaNota=Math.round(notas.reduce((s,n)=>s+n,0)/notas.length);
+  resumo.textContent=h.length+' rodadas • melhor nota: '+melhorNota+' • média: '+mediaNota;
+  lista.innerHTML='';
+  h.forEach(r=>{
+    const dt=new Date(r.data);
+    const el=document.createElement('div');
+    el.className='hist-item';
+    const est=(r.estrelas!=null)?('★'.repeat(r.estrelas)+'☆'.repeat(3-r.estrelas)):'';
+    const nota=(r.nota!=null)?r.nota:Math.round((r.acertos/r.total)*100);
+    el.innerHTML='<div><div>'+(est?('<span style="color:var(--estrela);letter-spacing:1px">'+est+'</span> '):'')+'📊 Nota '+nota+' • ✅ '+r.acertos+'/'+r.total+'</div>'+
+      '<div class="data">tabuadas '+r.tabs.join(', ')+' • '+dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</div></div>'+
+      '<div class="pts">'+nota+'</div>';
+    lista.appendChild(el);
+  });
+}
+function limparHistorico(){
+  if(confirm('Apagar todo o histórico de rodadas?')){DB.clearHist();renderHistorico()}
+}
+
+/* ---------- teclado físico (apoio) ---------- */
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('tela-jogo').classList.contains('hidden'))return;
+  const r=document.getElementById('j-resposta');
+  if(/[0-9]/.test(e.key)&&r.value.length<4)r.value+=e.key;
+  else if(e.key==='Backspace')r.value=r.value.slice(0,-1);
+  else if(e.key==='Enter')responder();
+});
+
+/* ---------- start ---------- */
+(function(){
+  const perfis=DB.perfis();
+  if(perfis.length===0){novoCadastro();}
+  else if(DB.user()){irMenu();}
+  else{renderPerfis();mostrar('tela-perfis');}
+})();
+</script>
+</body>
+</html>
