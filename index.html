@@ -78,6 +78,11 @@
 
   /* seletor de tabuadas */
   .tab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:10px;margin-top:10px}
+  /* botões de operação */
+  .op-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .op-btn{padding:16px 10px;font-size:16px;border-radius:16px;background:#0a1c45;border:3px solid #2b4ea0;color:#cfe0ff;font-family:inherit;font-weight:bold}
+  .op-btn.on{background:var(--roxo);color:#fff;border-color:#fff;transform:scale(1.02)}
+  .nivel-btn.on{background:var(--estrela)!important;color:#3a2c00!important}
   .tab-chip{
     padding:16px 0;text-align:center;font-size:22px;font-weight:bold;border-radius:16px;
     background:#0a1c45;border:3px solid #2b4ea0;color:#cfe0ff;cursor:pointer;user-select:none;
@@ -240,13 +245,29 @@
       <div class="nome" id="m-nome">Olá!</div>
       <div class="idade" id="m-idade"></div>
     </div>
-    <label>Escolha as tabuadas que quer praticar:</label>
-    <div class="tab-grid" id="tab-grid"></div>
-    <div class="mini-row">
-      <button onclick="selecionarTab('todas')">Todas</button>
-      <button onclick="selecionarTab('faceis')">Fáceis (2-5)</button>
-      <button onclick="selecionarTab('limpar')">Limpar</button>
+    <label>Que tipo de conta você quer praticar?</label>
+    <div class="op-grid" id="op-grid">
+      <button class="op-btn" data-op="x">✖️ Multiplicação</button>
+      <button class="op-btn" data-op="+">➕ Soma</button>
+      <button class="op-btn" data-op="-">➖ Subtração</button>
+      <button class="op-btn" data-op="mix">🎲 Misturar tudo</button>
     </div>
+
+    <div id="bloco-tabuadas">
+      <label style="margin-top:18px">Escolha as tabuadas:</label>
+      <div class="tab-grid" id="tab-grid"></div>
+      <div class="mini-row">
+        <button onclick="selecionarTab('todas')">Todas</button>
+        <button onclick="selecionarTab('faceis')">Fáceis (2-5)</button>
+        <button onclick="selecionarTab('limpar')">Limpar</button>
+      </div>
+    </div>
+
+    <div id="bloco-nivel" class="hidden">
+      <label style="margin-top:18px">Escolha o nível dos números:</label>
+      <div class="mini-row" id="nivel-row"></div>
+    </div>
+
     <label style="margin-top:18px">Quantas perguntas?</label>
     <div class="mini-row" id="qtd-row"></div>
     <button class="btn-grande" onclick="iniciarJogo()">▶️ Iniciar tarefa</button>
@@ -292,7 +313,7 @@
     <div class="stat"><span>❌ Erros</span><b id="r-erros">0</b></div>
     <div class="stat"><span>🔥 Melhor sequência</span><b id="r-seq">0</b></div>
     <div class="stat"><span>⏱️ Tempo</span><b id="r-tempo">0s</b></div>
-    <div class="stat"><span>📚 Tabuadas</span><b id="r-tabs">-</b></div>
+    <div class="stat"><span>📚 Atividade</span><b id="r-tabs">-</b></div>
     <button class="btn-grande btn-verde" onclick="iniciarJogo()">🔁 Jogar de novo</button>
     <div class="topo-nav">
       <button onclick="mostrar('tela-menu')">🏠 Menu</button>
@@ -418,13 +439,29 @@ function trocarUsuario(){
 /* ---------- menu ---------- */
 let tabSelecionadas=new Set([2,3]);
 let qtdEscolhida=10;
+let operacao='x';        // 'x', '+', '-', 'mix'
+let nivel='facil';       // 'facil' (até 10), 'medio' (até 20), 'dificil' (até 100)
 const opcoesQtd=[5,10,15,20];
+const NIVEIS={facil:{lbl:'Fácil (até 10)',max:10},medio:{lbl:'Médio (até 20)',max:20},dificil:{lbl:'Difícil (até 100)',max:100}};
 
 function montarMenu(){
   const u=DB.user();
   const idade=calcIdade(u.nasc);
   document.getElementById('m-nome').textContent='Olá, '+u.apelido+'! 👋';
   document.getElementById('m-idade').textContent=idade!=null?(idade+' anos • pronta(o) para jogar?'):'';
+
+  // botões de operação
+  document.querySelectorAll('#op-grid .op-btn').forEach(b=>{
+    b.classList.toggle('on',b.dataset.op===operacao);
+    b.onclick=()=>{operacao=b.dataset.op;montarMenu()};
+  });
+  // mostra tabuadas só na multiplicação; nível na soma/subtração; ambos no misturar
+  const mostraTab=(operacao==='x'||operacao==='mix');
+  const mostraNivel=(operacao==='+'||operacao==='-'||operacao==='mix');
+  document.getElementById('bloco-tabuadas').classList.toggle('hidden',!mostraTab);
+  document.getElementById('bloco-nivel').classList.toggle('hidden',!mostraNivel);
+
+  // grade de tabuadas
   const g=document.getElementById('tab-grid');g.innerHTML='';
   for(let n=1;n<=10;n++){
     const c=document.createElement('div');
@@ -433,6 +470,16 @@ function montarMenu(){
     c.onclick=()=>{tabSelecionadas.has(n)?tabSelecionadas.delete(n):tabSelecionadas.add(n);c.classList.toggle('on')};
     g.appendChild(c);
   }
+  // botões de nível
+  const nr=document.getElementById('nivel-row');nr.innerHTML='';
+  Object.keys(NIVEIS).forEach(k=>{
+    const b=document.createElement('button');
+    b.className='nivel-btn'+(nivel===k?' on':'');
+    b.textContent=NIVEIS[k].lbl;
+    b.onclick=()=>{nivel=k;montarMenu()};
+    nr.appendChild(b);
+  });
+  // quantidade
   const q=document.getElementById('qtd-row');q.innerHTML='';
   opcoesQtd.forEach(v=>{
     const b=document.createElement('button');
@@ -489,15 +536,40 @@ function iniciarTimer(){
   timerId=requestAnimationFrame(frame);
 }
 
+function gerarConta(op){
+  // retorna {a,b,op,res,texto}
+  if(op==='x'){
+    const tabs=[...tabSelecionadas];
+    const a=tabs[Math.floor(Math.random()*tabs.length)];
+    const b=Math.floor(Math.random()*10)+1;
+    return {a,b,op:'x',res:a*b,texto:a+' × '+b};
+  }
+  const max=NIVEIS[nivel].max;
+  if(op==='+'){
+    const a=Math.floor(Math.random()*(max+1));
+    const b=Math.floor(Math.random()*(max+1));
+    return {a,b,op:'+',res:a+b,texto:a+' + '+b};
+  }
+  // subtração: garante a >= b para não dar negativo
+  let a=Math.floor(Math.random()*(max+1));
+  let b=Math.floor(Math.random()*(max+1));
+  if(b>a){const t=a;a=b;b=t;}
+  return {a,b,op:'-',res:a-b,texto:a+' − '+b};
+}
+
 function novaPergunta(){
-  const tabs=[...tabSelecionadas];
-  const a=tabs[Math.floor(Math.random()*tabs.length)];
-  const b=Math.floor(Math.random()*10)+1;
-  // evita repetir igual à anterior
-  if(jogo.ultima===a+'x'+b)return novaPergunta();
-  jogo.ultima=a+'x'+b;
-  jogo.a=a;jogo.b=b;jogo.inicioPergunta=Date.now();
-  document.getElementById('j-conta').textContent=a+' × '+b;
+  // define a operação desta pergunta
+  let op=operacao;
+  if(op==='mix'){
+    const ops=['x','+','-'];
+    op=ops[Math.floor(Math.random()*ops.length)];
+  }
+  const c=gerarConta(op);
+  // evita repetir exatamente a anterior
+  if(jogo.ultima===c.texto)return novaPergunta();
+  jogo.ultima=c.texto;
+  jogo.a=c.a;jogo.b=c.b;jogo.op=c.op;jogo.res=c.res;jogo.inicioPergunta=Date.now();
+  document.getElementById('j-conta').textContent=c.texto;
   document.getElementById('j-resposta').value='';
   document.getElementById('j-feedback').textContent='';
   atualizarHud();
@@ -509,9 +581,18 @@ function atualizarHud(){
   document.getElementById('j-seq').textContent=jogo.seq;
   document.getElementById('j-barra').style.width=(jogo.idx/jogo.total*100)+'%';
 }
+function rotuloAtividade(){
+  if(operacao==='x')return 'Multiplicação (tabuadas '+[...tabSelecionadas].sort((x,y)=>x-y).join(', ')+')';
+  if(operacao==='+')return 'Soma • '+NIVEIS[nivel].lbl;
+  if(operacao==='-')return 'Subtração • '+NIVEIS[nivel].lbl;
+  return 'Misturado • '+NIVEIS[nivel].lbl;
+}
 function iniciarJogo(){
-  if(tabSelecionadas.size===0){alert('Escolha pelo menos uma tabuada no menu!');mostrar('tela-menu');montarMenu();return}
-  jogo={total:qtdEscolhida,idx:0,pontos:0,acertos:0,erros:0,seq:0,melhorSeq:0,inicio:Date.now(),ultima:'',tabs:[...tabSelecionadas].sort((x,y)=>x-y),ptBase:0,ptVel:0,ptCombo:0};
+  if((operacao==='x'||operacao==='mix')&&tabSelecionadas.size===0){
+    alert('Escolha pelo menos uma tabuada no menu!');mostrar('tela-menu');montarMenu();return;
+  }
+  jogo={total:qtdEscolhida,idx:0,pontos:0,acertos:0,erros:0,seq:0,melhorSeq:0,inicio:Date.now(),ultima:'',
+        op:operacao,nivel:nivel,tabs:[...tabSelecionadas].sort((x,y)=>x-y),rotulo:rotuloAtividade(),ptBase:0,ptVel:0,ptCombo:0};
   montarTeclado();
   mostrar('tela-jogo');
   novaPergunta();
@@ -531,7 +612,7 @@ function responder(){
   if(r.value==='')return;
   pararTimer();
   const val=parseInt(r.value,10);
-  const certo=jogo.a*jogo.b;
+  const certo=jogo.res;
   const fb=document.getElementById('j-feedback');
   if(val===certo){
     jogo.acertos++;jogo.seq++;jogo.melhorSeq=Math.max(jogo.melhorSeq,jogo.seq);
@@ -551,7 +632,7 @@ function responder(){
   }else{
     jogo.erros++;jogo.seq=0;
     fb.style.color='var(--erro)';
-    fb.textContent='Quase! '+jogo.a+' × '+jogo.b+' = '+certo;
+    fb.textContent='Quase! '+document.getElementById('j-conta').textContent+' = '+certo;
   }
   jogo.idx++;
   atualizarHud();
@@ -576,7 +657,7 @@ function finalizar(){
   else if(pct>=.8)estrelas=2;
   else if(pct>=.5)estrelas=1;
 
-  const reg={data:Date.now(),nota,pontos:jogo.pontos,acertos:jogo.acertos,erros:jogo.erros,total:jogo.total,melhorSeq:jogo.melhorSeq,tempo,tabs:jogo.tabs,estrelas};
+  const reg={data:Date.now(),nota,pontos:jogo.pontos,acertos:jogo.acertos,erros:jogo.erros,total:jogo.total,melhorSeq:jogo.melhorSeq,tempo,tabs:jogo.tabs,rotulo:jogo.rotulo,estrelas};
   DB.addHist(reg);
 
   let tit='Continue praticando!';
@@ -590,7 +671,7 @@ function finalizar(){
   document.getElementById('r-erros').textContent=jogo.erros;
   document.getElementById('r-seq').textContent=jogo.melhorSeq;
   document.getElementById('r-tempo').textContent=tempo+'s';
-  document.getElementById('r-tabs').textContent=jogo.tabs.join(', ');
+  document.getElementById('r-tabs').textContent=jogo.rotulo;
 
   // detalhamento: nota por acertos + pontos de bônus separados
   const q=document.getElementById('r-quebra');
@@ -648,7 +729,7 @@ function renderHistorico(){
     const est=(r.estrelas!=null)?('★'.repeat(r.estrelas)+'☆'.repeat(3-r.estrelas)):'';
     const nota=(r.nota!=null)?r.nota:Math.round((r.acertos/r.total)*100);
     el.innerHTML='<div><div>'+(est?('<span style="color:var(--estrela);letter-spacing:1px">'+est+'</span> '):'')+'📊 Nota '+nota+' • ✅ '+r.acertos+'/'+r.total+'</div>'+
-      '<div class="data">tabuadas '+r.tabs.join(', ')+' • '+dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</div></div>'+
+      '<div class="data">'+(r.rotulo||('tabuadas '+(r.tabs?r.tabs.join(', '):'')))+' • '+dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</div></div>'+
       '<div class="pts">'+nota+'</div>';
     lista.appendChild(el);
   });
