@@ -81,7 +81,7 @@
   /* seletor de tabuadas */
   .tab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:10px;margin-top:10px}
   /* botões de operação */
-  .op-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .op-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
   .op-btn{padding:16px 10px;font-size:16px;border-radius:16px;background:#0c302f;border:3px solid #1f7a72;color:#bfe9e1;font-family:inherit;font-weight:bold}
   .op-btn.on{background:var(--roxo);color:#fff;border-color:#fff;transform:scale(1.02)}
   .nivel-btn.on{background:var(--estrela)!important;color:#3a2c00!important}
@@ -103,6 +103,11 @@
   .barra{height:14px;background:#0c302f;border-radius:999px;overflow:hidden;border:2px solid #1f7a72;margin-bottom:16px}
   .barra>i{display:block;height:100%;background:linear-gradient(90deg,var(--planeta),var(--estrela));width:0;transition:width .3s}
   .conta{font-size:clamp(46px,15vw,90px);text-align:center;font-weight:bold;color:#fff;text-shadow:4px 4px 0 #00000050;margin:10px 0 6px}
+  /* conta armada (vertical) para soma e subtração */
+  .conta.modo-armada{text-shadow:none}
+  .armada{display:inline-block;font-family:"Courier New",monospace;font-size:clamp(34px,11vw,64px);line-height:1.12;text-align:right;background:#0c302f;border:3px solid #1f7a72;border-radius:16px;padding:14px 22px;box-shadow:inset 0 2px 6px rgba(0,0,0,.25)}
+  .arm-num{color:#fff;letter-spacing:4px;white-space:pre}
+  .arm-linha{height:5px;background:var(--estrela);border-radius:3px;margin-top:8px}
   /* barra de tempo do bônus */
   .tempo-rotulo{display:flex;justify-content:space-between;font-size:13px;font-weight:bold;color:#bfe9e1;margin:4px 2px 5px}
   .tempo-rotulo #j-tempo-seg{color:var(--estrela)}
@@ -252,7 +257,6 @@
       <button class="op-btn" data-op="x">✖️ Multiplicação</button>
       <button class="op-btn" data-op="+">➕ Soma</button>
       <button class="op-btn" data-op="-">➖ Subtração</button>
-      <button class="op-btn" data-op="mix">🎲 Misturar tudo</button>
     </div>
 
     <div id="bloco-tabuadas">
@@ -266,7 +270,7 @@
     </div>
 
     <div id="bloco-nivel" class="hidden">
-      <label style="margin-top:18px">Escolha o nível dos números:</label>
+      <label style="margin-top:18px">Tamanho dos números:</label>
       <div class="mini-row" id="nivel-row"></div>
     </div>
 
@@ -441,10 +445,15 @@ function trocarUsuario(){
 /* ---------- menu ---------- */
 let tabSelecionadas=new Set([2,3]);
 let qtdEscolhida=10;
-let operacao='x';        // 'x', '+', '-', 'mix'
-let nivel='facil';       // 'facil' (até 10), 'medio' (até 20), 'dificil' (até 100)
+let operacao='x';        // 'x', '+', '-'
+let nivel='d2';          // dígitos das contas de soma/subtração
 const opcoesQtd=[5,10,15,20];
-const NIVEIS={facil:{lbl:'Fácil (até 10)',max:10},medio:{lbl:'Médio (até 20)',max:20},dificil:{lbl:'Difícil (até 100)',max:100}};
+// para soma/subtração: faixa de dígitos dos números
+const NIVEIS={
+  d2:{lbl:'2 dígitos',min:2,max:2},
+  d3:{lbl:'3 dígitos',min:2,max:3},
+  d4:{lbl:'Até 4 dígitos',min:2,max:4}
+};
 
 function montarMenu(){
   const u=DB.user();
@@ -457,9 +466,9 @@ function montarMenu(){
     b.classList.toggle('on',b.dataset.op===operacao);
     b.onclick=()=>{operacao=b.dataset.op;montarMenu()};
   });
-  // mostra tabuadas só na multiplicação; nível na soma/subtração; ambos no misturar
-  const mostraTab=(operacao==='x'||operacao==='mix');
-  const mostraNivel=(operacao==='+'||operacao==='-'||operacao==='mix');
+  // mostra tabuadas só na multiplicação; nível (dígitos) na soma/subtração
+  const mostraTab=(operacao==='x');
+  const mostraNivel=(operacao==='+'||operacao==='-');
   document.getElementById('bloco-tabuadas').classList.toggle('hidden',!mostraTab);
   document.getElementById('bloco-nivel').classList.toggle('hidden',!mostraNivel);
 
@@ -502,30 +511,37 @@ function irMenu(){montarMenu();mostrar('tela-menu')}
 
 /* ---------- jogo ---------- */
 let jogo=null;
-const BONUS_MS=10000; // 10 segundos para ganhar o bônus de velocidade
 let timerId=null;
+let bonusMsAtual=10000;  // duração do bônus desta pergunta (varia por operação)
 
+function duracaoBonus(op){
+  // multiplicação: 10s; soma/subtração: 60s
+  return (op==='+'||op==='-')?60000:10000;
+}
 function pararTimer(){
   if(timerId){cancelAnimationFrame(timerId);timerId=null;}
 }
 function iniciarTimer(){
   pararTimer();
+  bonusMsAtual=duracaoBonus(jogo.op);
+  const total=bonusMsAtual;
   const barra=document.getElementById('j-tempo');
   const wrap=barra.parentElement;
   const segEl=document.getElementById('j-tempo-seg');
   wrap.classList.remove('acabando','expirado');
+  const limiarPisca=Math.max(3000,total*0.1); // pisca nos últimos 10% (mín 3s)
   const t0=Date.now();
   function frame(){
     const dec=Date.now()-t0;
-    const restante=Math.max(0,BONUS_MS-dec);
-    const pct=restante/BONUS_MS; // 1 -> 0
+    const restante=Math.max(0,total-dec);
+    const pct=restante/total; // 1 -> 0
     barra.style.width=(pct*100)+'%';
     // cor: verde -> amarelo -> vermelho
     const hue=Math.round(120*pct); // 120=verde, 0=vermelho
     barra.style.backgroundColor='hsl('+hue+',85%,52%)';
     segEl.textContent=Math.ceil(restante/1000)+'s';
-    // piscar nos últimos 3 segundos
-    wrap.classList.toggle('acabando',restante>0&&restante<=3000);
+    // piscar quando está acabando
+    wrap.classList.toggle('acabando',restante>0&&restante<=limiarPisca);
     if(restante<=0){
       wrap.classList.remove('acabando');
       wrap.classList.add('expirado');
@@ -539,39 +555,76 @@ function iniciarTimer(){
 }
 
 function gerarConta(op){
-  // retorna {a,b,op,res,texto}
+  // retorna {a,b,op,res,texto,emprestimo}
   if(op==='x'){
     const tabs=[...tabSelecionadas];
     const a=tabs[Math.floor(Math.random()*tabs.length)];
     const b=Math.floor(Math.random()*10)+1;
     return {a,b,op:'x',res:a*b,texto:a+' × '+b};
   }
-  const max=NIVEIS[nivel].max;
+  // soma e subtração: números com nº de dígitos entre min e max do nível
+  const nv=NIVEIS[nivel];
+  function numComDigitos(d){
+    if(d<=1)return Math.floor(Math.random()*10);
+    const minN=Math.pow(10,d-1);      // ex.: 3 díg -> 100
+    const maxN=Math.pow(10,d)-1;       // ex.: 3 díg -> 999
+    return minN+Math.floor(Math.random()*(maxN-minN+1));
+  }
+  function sorteiaDigitos(){
+    return nv.min+Math.floor(Math.random()*(nv.max-nv.min+1));
+  }
   if(op==='+'){
-    const a=Math.floor(Math.random()*(max+1));
-    const b=Math.floor(Math.random()*(max+1));
+    const a=numComDigitos(sorteiaDigitos());
+    const b=numComDigitos(sorteiaDigitos());
     return {a,b,op:'+',res:a+b,texto:a+' + '+b};
   }
-  // subtração: garante a >= b para não dar negativo
-  let a=Math.floor(Math.random()*(max+1));
-  let b=Math.floor(Math.random()*(max+1));
+  // subtração: a >= b (sem negativo). Empréstimo acontece naturalmente (com e sem).
+  let a=numComDigitos(sorteiaDigitos());
+  let b=numComDigitos(sorteiaDigitos());
   if(b>a){const t=a;a=b;b=t;}
-  return {a,b,op:'-',res:a-b,texto:a+' − '+b};
+  return {a,b,op:'-',res:a-b,texto:a+' − '+b,emprestimo:precisaEmprestar(a,b)};
+}
+
+// verifica se a subtração a-b exige empréstimo em alguma casa
+function precisaEmprestar(a,b){
+  const sa=String(a), sb=String(b).padStart(sa.length,'0');
+  for(let i=sa.length-1;i>=0;i--){
+    if(parseInt(sa[i])<parseInt(sb[i]))return true;
+  }
+  return false;
+}
+
+// monta a conta na vertical (armada), alinhada à direita
+function montarContaArmada(a,b,sinal){
+  const sa=String(a), sb=String(b);
+  const larg=Math.max(sa.length,sb.length);
+  // largura total inclui o sinal + espaço na frente
+  const total=larg+2;
+  const l1=sa.padStart(total,' ');           // primeiro número, sem sinal
+  const l2=(sinal+' '+sb.padStart(larg,' ')).padStart(total,' '); // sinal + segundo número
+  const f=s=>s.replace(/ /g,'\u00A0');
+  return '<div class="armada">'+
+    '<div class="arm-num">'+f(l1)+'</div>'+
+    '<div class="arm-num">'+f(l2)+'</div>'+
+    '<div class="arm-linha"></div>'+
+    '</div>';
 }
 
 function novaPergunta(){
-  // define a operação desta pergunta
-  let op=operacao;
-  if(op==='mix'){
-    const ops=['x','+','-'];
-    op=ops[Math.floor(Math.random()*ops.length)];
-  }
+  const op=operacao;
   const c=gerarConta(op);
   // evita repetir exatamente a anterior
   if(jogo.ultima===c.texto)return novaPergunta();
   jogo.ultima=c.texto;
   jogo.a=c.a;jogo.b=c.b;jogo.op=c.op;jogo.res=c.res;jogo.inicioPergunta=Date.now();
-  document.getElementById('j-conta').textContent=c.texto;
+  const contaEl=document.getElementById('j-conta');
+  if(op==='+'||op==='-'){
+    contaEl.classList.add('modo-armada');
+    contaEl.innerHTML=montarContaArmada(c.a,c.b,op==='+'?'+':'−');
+  }else{
+    contaEl.classList.remove('modo-armada');
+    contaEl.textContent=c.texto;
+  }
   document.getElementById('j-resposta').value='';
   document.getElementById('j-feedback').textContent='';
   atualizarHud();
@@ -586,11 +639,10 @@ function atualizarHud(){
 function rotuloAtividade(){
   if(operacao==='x')return 'Multiplicação (tabuadas '+[...tabSelecionadas].sort((x,y)=>x-y).join(', ')+')';
   if(operacao==='+')return 'Soma • '+NIVEIS[nivel].lbl;
-  if(operacao==='-')return 'Subtração • '+NIVEIS[nivel].lbl;
-  return 'Misturado • '+NIVEIS[nivel].lbl;
+  return 'Subtração • '+NIVEIS[nivel].lbl;
 }
 function iniciarJogo(){
-  if((operacao==='x'||operacao==='mix')&&tabSelecionadas.size===0){
+  if(operacao==='x'&&tabSelecionadas.size===0){
     alert('Escolha pelo menos uma tabuada no menu!');mostrar('tela-menu');montarMenu();return;
   }
   jogo={total:qtdEscolhida,idx:0,pontos:0,acertos:0,erros:0,seq:0,melhorSeq:0,inicio:Date.now(),ultima:'',
@@ -605,7 +657,7 @@ function montarTeclado(){
     const b=document.createElement('button');
     if(k==='apagar'){b.textContent='⌫';b.className='acao';b.onclick=()=>{const r=document.getElementById('j-resposta');r.value=r.value.slice(0,-1)}}
     else if(k==='ok'){b.textContent='OK';b.className='acao';b.onclick=responder}
-    else{b.textContent=k;b.onclick=()=>{const r=document.getElementById('j-resposta');if(r.value.length<4)r.value+=k}}
+    else{b.textContent=k;b.onclick=()=>{const r=document.getElementById('j-resposta');if(r.value.length<5)r.value+=k}}
     t.appendChild(b);
   });
 }
@@ -618,7 +670,7 @@ function responder(){
   const fb=document.getElementById('j-feedback');
   if(val===certo){
     jogo.acertos++;jogo.seq++;jogo.melhorSeq=Math.max(jogo.melhorSeq,jogo.seq);
-    const rapido=(Date.now()-jogo.inicioPergunta)<BONUS_MS;
+    const rapido=(Date.now()-jogo.inicioPergunta)<bonusMsAtual;
     const bCombo=jogo.seq>=3?5:0;
     const bVel=rapido?5:0;
     let ganho=10+bCombo+bVel;
@@ -744,7 +796,7 @@ function limparHistorico(){
 document.addEventListener('keydown',e=>{
   if(document.getElementById('tela-jogo').classList.contains('hidden'))return;
   const r=document.getElementById('j-resposta');
-  if(/[0-9]/.test(e.key)&&r.value.length<4)r.value+=e.key;
+  if(/[0-9]/.test(e.key)&&r.value.length<5)r.value+=e.key;
   else if(e.key==='Backspace')r.value=r.value.slice(0,-1);
   else if(e.key==='Enter')responder();
 });
