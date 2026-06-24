@@ -103,11 +103,32 @@
   .barra{height:14px;background:#0c302f;border-radius:999px;overflow:hidden;border:2px solid #1f7a72;margin-bottom:16px}
   .barra>i{display:block;height:100%;background:linear-gradient(90deg,var(--planeta),var(--estrela));width:0;transition:width .3s}
   .conta{font-size:clamp(46px,15vw,90px);text-align:center;font-weight:bold;color:#fff;text-shadow:4px 4px 0 #00000050;margin:10px 0 6px}
-  /* conta armada (vertical) para soma e subtração */
+  /* conta armada (vertical) interativa */
   .conta.modo-armada{text-shadow:none}
-  .armada{display:inline-block;font-family:"Courier New",monospace;font-size:clamp(34px,11vw,64px);line-height:1.12;text-align:right;background:#0c302f;border:3px solid #1f7a72;border-radius:16px;padding:14px 22px;box-shadow:inset 0 2px 6px rgba(0,0,0,.25)}
-  .arm-num{color:#fff;letter-spacing:4px;white-space:pre}
-  .arm-linha{height:5px;background:var(--estrela);border-radius:3px;margin-top:8px}
+  .armada2{display:inline-block;background:#0c302f;border:3px solid #1f7a72;border-radius:16px;padding:20px 16px 12px;box-shadow:inset 0 2px 6px rgba(0,0,0,.25)}
+  .arm-grid{display:grid;gap:0;font-family:"Courier New",monospace;font-weight:bold}
+  .arm-row{display:grid;grid-template-columns:var(--cols)}
+  .arm-cell{width:clamp(34px,9.5vw,58px);height:clamp(40px,11vw,64px);display:flex;align-items:center;justify-content:center;font-size:clamp(30px,9vw,54px);color:#fff;position:relative}
+  .arm-cell.sinal{color:var(--estrela)}
+  /* anotação (vai 1 / empréstimo) */
+  .arm-anot{height:clamp(22px,6vw,32px);font-size:clamp(15px,4.2vw,22px);color:var(--estrela)}
+  .clicavel-anot{cursor:pointer;border-radius:6px}
+  .clicavel-anot:active{background:#16403d}
+  /* dígito de cima clicável (subtração) */
+  .arm-top.clicavel{cursor:pointer;border-radius:8px}
+  .arm-top.clicavel:active{background:#16403d}
+  .arm-top.riscado .dig-orig{text-decoration:line-through;text-decoration-color:var(--foguete);text-decoration-thickness:3px;opacity:.65}
+  .arm-top .dig-cima{position:absolute;top:-6px;left:0;right:0;text-align:center;font-size:.42em;font-weight:bold;line-height:1;letter-spacing:1px}
+  .arm-top .dig-cima .an-um{color:var(--planeta)}
+  .arm-top .dig-cima .an-menos{color:var(--estrela)}
+  .arm-linha2{height:5px;background:var(--estrela);border-radius:3px;margin:4px 0}
+  /* casas do resultado */
+  .arm-res{width:clamp(34px,9.5vw,58px);height:clamp(40px,11vw,64px);display:flex;align-items:center;justify-content:center;font-size:clamp(30px,9vw,54px);border:2px dashed #2c8a7f;border-radius:8px;color:var(--estrela)}
+  .arm-res.ativa{border-style:solid;border-color:var(--estrela);background:#16403d;animation:pulsaCasa 1s ease-in-out infinite}
+  .arm-res.vazia{color:#3a6e67}
+  @keyframes pulsaCasa{0%,100%{box-shadow:0 0 0 0 rgba(255,210,63,.5)}50%{box-shadow:0 0 0 5px rgba(255,210,63,0)}}
+  .arm-res-cell{display:flex;align-items:center;justify-content:center}
+  .dica-armada{text-align:center;font-size:13px;color:#8fc7bf;min-height:18px;margin:2px 0 6px}
   /* barra de tempo do bônus */
   .tempo-rotulo{display:flex;justify-content:space-between;font-size:13px;font-weight:bold;color:#bfe9e1;margin:4px 2px 5px}
   .tempo-rotulo #j-tempo-seg{color:var(--estrela)}
@@ -293,6 +314,7 @@
     </div>
     <div class="barra"><i id="j-barra"></i></div>
     <div class="conta" id="j-conta">3 × 4</div>
+    <div class="dica-armada" id="j-dica"></div>
     <div class="tempo-rotulo"><span>⚡ Bônus de velocidade</span><span id="j-tempo-seg">10s</span></div>
     <div class="tempo-barra"><i id="j-tempo"></i></div>
     <div class="resposta-box">
@@ -594,41 +616,181 @@ function precisaEmprestar(a,b){
   return false;
 }
 
-// monta a conta na vertical (armada), alinhada à direita
-function montarContaArmada(a,b,sinal){
+// monta a conta armada interativa (grade de casas)
+function montarContaArmada(a,b,op){
+  const sinal = op==='+' ? '+' : '−';
   const sa=String(a), sb=String(b);
-  const larg=Math.max(sa.length,sb.length);
-  // largura total inclui o sinal + espaço na frente
-  const total=larg+2;
-  const l1=sa.padStart(total,' ');           // primeiro número, sem sinal
-  const l2=(sinal+' '+sb.padStart(larg,' ')).padStart(total,' '); // sinal + segundo número
-  const f=s=>s.replace(/ /g,'\u00A0');
-  return '<div class="armada">'+
-    '<div class="arm-num">'+f(l1)+'</div>'+
-    '<div class="arm-num">'+f(l2)+'</div>'+
-    '<div class="arm-linha"></div>'+
-    '</div>';
+  const nres=String(op==='+'?a+b:a-b).length;
+  const ncols=Math.max(sa.length,sb.length,nres);
+  const total=ncols+1; // +1 coluna à esquerda para o sinal
+  const da=sa.padStart(total,' ').split('');
+  const db=sb.padStart(total,' ').split('');
+  jogo.ncasas=ncols;
+  jogo.casas=new Array(ncols).fill(''); // resultado por casa (índice 0 = mais à esquerda)
+  jogo.empResta=new Array(total).fill(false);  // esta coluna emprestou (vale -1)
+  jogo.empRecebe=new Array(total).fill(false); // esta coluna recebeu (+10, mostra "1")
+
+  let html='<div class="armada2"><div class="arm-grid" style="--cols:repeat('+total+',1fr)">';
+  // linha de anotação (vai 1 / empréstimo) - uma célula por coluna
+  html+='<div class="arm-row">';
+  for(let i=0;i<total;i++){
+    if(op==='+'&&i>0){
+      // na soma, a anotação é clicável para marcar o "vai 1"
+      html+='<div class="arm-cell arm-anot clicavel-anot" id="anot-'+i+'" onclick="toggleVaiUm('+i+')"></div>';
+    }else{
+      html+='<div class="arm-cell arm-anot" id="anot-'+i+'"></div>';
+    }
+  }
+  html+='</div>';
+  // linha do número de cima
+  html+='<div class="arm-row">';
+  for(let i=0;i<total;i++){
+    const ch=da[i];
+    if(ch===' '){html+='<div class="arm-cell"></div>';}
+    else{
+      const cls='arm-cell arm-top'+(op==='-'?' clicavel':'');
+      html+='<div class="'+cls+'" data-col="'+i+'" data-dig="'+ch+'" '+(op==='-'?'onclick="toggleEmprestimo('+i+')"':'')+'>'+
+            '<span class="dig-cima" id="cima-'+i+'"></span>'+
+            '<span class="dig-orig" id="orig-'+i+'">'+ch+'</span></div>';
+    }
+  }
+  html+='</div>';
+  // linha do número de baixo (com sinal)
+  html+='<div class="arm-row">';
+  html+='<div class="arm-cell sinal">'+sinal+'</div>';
+  for(let i=1;i<total;i++){
+    const ch=db[i];
+    html+='<div class="arm-cell">'+(ch===' '?'':ch)+'</div>';
+  }
+  html+='</div>';
+  // linha de separação
+  html+='<div class="arm-linha2"></div>';
+  // linha do resultado (casas) - alinha com as colunas dos números (sem a coluna do sinal)
+  html+='<div class="arm-row">';
+  html+='<div class="arm-res-cell"></div>'; // coluna do sinal fica vazia
+  for(let i=0;i<ncols;i++){
+    html+='<div class="arm-res-cell"><div class="arm-res vazia" id="res-'+i+'"></div></div>';
+  }
+  html+='</div>';
+  html+='</div></div>';
+  return html;
+}
+
+// marca/desmarca o "vai 1" acima de uma coluna na soma (ajuda visual)
+function toggleVaiUm(col){
+  const el=document.getElementById('anot-'+col);
+  if(!el)return;
+  if(el.textContent==='1'){el.textContent='';}
+  else{el.textContent='1';el.style.color='var(--planeta)';}
+}
+
+// alterna a marcação de empréstimo (ajuda visual didática)
+// tocar numa casa = "pedir emprestado" para a casa à direita.
+// Estados independentes por coluna:
+//   empResta[col]   -> esta coluna emprestou: vale (dígito - 1), fica riscada
+//   empRecebe[col]  -> esta coluna recebeu: ganha "1" na frente (vira 1X)
+// As duas coisas podem acontecer na mesma coluna ao mesmo tempo.
+function toggleEmprestimo(col){
+  col=parseInt(col,10);
+  const colDir=col+1;
+  const celDir=document.querySelector('.arm-top[data-col="'+colDir+'"]');
+  if(!celDir)return; // não há casa à direita para receber
+  // alterna: esta coluna empresta, a da direita recebe
+  const novoEstado=!jogo.empResta[col];
+  jogo.empResta[col]=novoEstado;
+  jogo.empRecebe[colDir]=novoEstado;
+  renderEmprestimos();
+}
+// redesenha as marcações de todas as colunas com base nos estados
+function renderEmprestimos(){
+  document.querySelectorAll('.arm-top').forEach(cel=>{
+    const col=parseInt(cel.dataset.col,10);
+    const dig=parseInt(cel.dataset.dig,10);
+    const cimaEl=document.getElementById('cima-'+col);
+    const resta=jogo.empResta[col];     // esta casa emprestou para a direita (-1)
+    const recebe=jogo.empRecebe[col];   // esta casa recebeu +10 da esquerda
+    // valor atual da casa = dígito original (+10 se recebeu) (-1 se emprestou)
+    let valor=dig;
+    if(recebe)valor+=10;
+    if(resta)valor-=1;
+    let txt='';
+    if(recebe&&!resta){
+      // recebeu e não emprestou: mostra "1" + dígito (ex.: 6 -> "16")
+      txt='<span class="an-um">1</span><span class="an-menos">'+dig+'</span>';
+    }else if(recebe&&resta){
+      // recebeu e emprestou (ex.: 0 -> 10 -> 9): mostra só o valor final
+      txt='<span class="an-menos">'+valor+'</span>';
+    }else if(resta){
+      // só emprestou: mostra dígito - 1
+      txt='<span class="an-menos">'+valor+'</span>';
+    }
+    cimaEl.innerHTML=txt;
+    cel.classList.toggle('riscado', resta||recebe);
+  });
 }
 
 function novaPergunta(){
   const op=operacao;
   const c=gerarConta(op);
-  // evita repetir exatamente a anterior
   if(jogo.ultima===c.texto)return novaPergunta();
   jogo.ultima=c.texto;
   jogo.a=c.a;jogo.b=c.b;jogo.op=c.op;jogo.res=c.res;jogo.inicioPergunta=Date.now();
   const contaEl=document.getElementById('j-conta');
+  const respBox=document.querySelector('.resposta-box');
+  const dica=document.getElementById('j-dica');
   if(op==='+'||op==='-'){
     contaEl.classList.add('modo-armada');
-    contaEl.innerHTML=montarContaArmada(c.a,c.b,op==='+'?'+':'−');
+    contaEl.innerHTML=montarContaArmada(c.a,c.b,op);
+    respBox.classList.add('hidden');         // usa as casas, não a caixa
+    jogo.casaAtual=jogo.ncasas-1;            // começa pela unidade (mais à direita)
+    marcarCasaAtiva();
+    dica.textContent = op==='-' ? '💡 Toque num número de cima para pedir emprestado'
+                                : '💡 Toque em cima de uma coluna para marcar o "vai 1"';
   }else{
     contaEl.classList.remove('modo-armada');
     contaEl.textContent=c.texto;
+    respBox.classList.remove('hidden');
+    document.getElementById('j-resposta').value='';
+    jogo.casas=null;
+    dica.textContent='';
   }
-  document.getElementById('j-resposta').value='';
   document.getElementById('j-feedback').textContent='';
   atualizarHud();
   iniciarTimer();
+}
+// destaca a casa que está sendo preenchida
+function marcarCasaAtiva(){
+  for(let i=0;i<jogo.ncasas;i++){
+    const el=document.getElementById('res-'+i);
+    if(!el)continue;
+    el.classList.toggle('ativa', i===jogo.casaAtual);
+  }
+}
+// digita um número na casa atual (preenche da direita para a esquerda)
+function digitarCasa(d){
+  if(!jogo.casas||jogo.casaAtual<0)return;
+  const el=document.getElementById('res-'+jogo.casaAtual);
+  jogo.casas[jogo.casaAtual]=d;
+  el.textContent=d;el.classList.remove('vazia');
+  jogo.casaAtual--; // anda para a esquerda (dezena, centena, milhar)
+  marcarCasaAtiva();
+}
+// apaga: volta para a última casa preenchida (à direita) e limpa
+function apagarCasa(){
+  if(!jogo.casas)return;
+  // a casa preenchida mais à esquerda fica em casaAtual+1
+  let alvo=jogo.casaAtual+1;
+  if(alvo>jogo.ncasas-1)return; // nada preenchido
+  jogo.casas[alvo]='';
+  const el=document.getElementById('res-'+alvo);
+  if(el){el.textContent='';el.classList.add('vazia');}
+  jogo.casaAtual=alvo;
+  marcarCasaAtiva();
+}
+// monta o número final a partir das casas
+function valorDasCasas(){
+  const s=jogo.casas.map(c=>c===''?'':c).join('');
+  return s===''?null:parseInt(s,10);
 }
 function atualizarHud(){
   document.getElementById('j-pontos').textContent=jogo.pontos;
@@ -655,17 +817,31 @@ function montarTeclado(){
   const t=document.getElementById('teclado');t.innerHTML='';
   ['1','2','3','4','5','6','7','8','9','apagar','0','ok'].forEach(k=>{
     const b=document.createElement('button');
-    if(k==='apagar'){b.textContent='⌫';b.className='acao';b.onclick=()=>{const r=document.getElementById('j-resposta');r.value=r.value.slice(0,-1)}}
-    else if(k==='ok'){b.textContent='OK';b.className='acao';b.onclick=responder}
-    else{b.textContent=k;b.onclick=()=>{const r=document.getElementById('j-resposta');if(r.value.length<5)r.value+=k}}
+    if(k==='apagar'){b.textContent='⌫';b.className='acao';b.onclick=teclaApagar;}
+    else if(k==='ok'){b.textContent='OK';b.className='acao';b.onclick=responder;}
+    else{b.textContent=k;b.onclick=()=>teclaDigito(k);}
     t.appendChild(b);
   });
 }
+function teclaDigito(k){
+  if(jogo.casas){ digitarCasa(k); }
+  else{ const r=document.getElementById('j-resposta'); if(r.value.length<5)r.value+=k; }
+}
+function teclaApagar(){
+  if(jogo.casas){ apagarCasa(); }
+  else{ const r=document.getElementById('j-resposta'); r.value=r.value.slice(0,-1); }
+}
 function responder(){
-  const r=document.getElementById('j-resposta');
-  if(r.value==='')return;
+  let val;
+  if(jogo.casas){
+    val=valorDasCasas();
+    if(val===null)return; // nada digitado
+  }else{
+    const r=document.getElementById('j-resposta');
+    if(r.value==='')return;
+    val=parseInt(r.value,10);
+  }
   pararTimer();
-  const val=parseInt(r.value,10);
   const certo=jogo.res;
   const fb=document.getElementById('j-feedback');
   if(val===certo){
@@ -686,7 +862,10 @@ function responder(){
   }else{
     jogo.erros++;jogo.seq=0;
     fb.style.color='var(--erro)';
-    fb.textContent='Quase! '+document.getElementById('j-conta').textContent+' = '+certo;
+    const txtConta = jogo.op==='x' ? (jogo.a+' × '+jogo.b)
+                   : jogo.op==='+' ? (jogo.a+' + '+jogo.b)
+                   : (jogo.a+' − '+jogo.b);
+    fb.textContent='Quase! '+txtConta+' = '+certo;
   }
   jogo.idx++;
   atualizarHud();
@@ -795,9 +974,8 @@ function limparHistorico(){
 /* ---------- teclado físico (apoio) ---------- */
 document.addEventListener('keydown',e=>{
   if(document.getElementById('tela-jogo').classList.contains('hidden'))return;
-  const r=document.getElementById('j-resposta');
-  if(/[0-9]/.test(e.key)&&r.value.length<5)r.value+=e.key;
-  else if(e.key==='Backspace')r.value=r.value.slice(0,-1);
+  if(/^[0-9]$/.test(e.key))teclaDigito(e.key);
+  else if(e.key==='Backspace')teclaApagar();
   else if(e.key==='Enter')responder();
 });
 
