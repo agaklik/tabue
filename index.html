@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tabuê</title>
 <meta name="description" content="Tabuê - a tabuada que vira jogo! Pratique multiplicação de um jeito divertido.">
-<meta name="theme-color" content="#0b1d4d">
+<meta name="theme-color" content="#0d3b3a">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -15,22 +15,24 @@
 <meta name="apple-mobile-web-app-title" content="Tabuê">
 <style>
   :root{
-    --ceu:#0b1d4d;
-    --ceu2:#13316f;
-    --estrela:#ffe66d;
-    --foguete:#ff5a5f;
+    --ceu:#0d3b3a;        /* teal escuro base */
+    --ceu2:#12514d;       /* teal cartão */
+    --estrela:#ffd23f;    /* amarelo das chamas - destaque */
+    --foguete:#ff5a5f;    /* vermelho das aletas */
     --planeta:#5be8c6;
-    --roxo:#9b6bff;
-    --branco:#f7faff;
+    --roxo:#2bb5a0;       /* botão secundário em teal */
+    --branco:#f3fbf9;
     --acerto:#3ddc84;
     --erro:#ff6b6b;
-    --sombra:0 10px 0 rgba(0,0,0,.18);
+    --borda:#1f7a72;      /* borda teal */
+    --campo:#0c302f;      /* fundo de campos */
+    --sombra:0 10px 0 rgba(0,0,0,.20);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
     font-family:"Trebuchet MS","Comic Sans MS",system-ui,sans-serif;
-    background:radial-gradient(circle at 20% 10%, #1c3f8a 0%, var(--ceu) 45%, #060f2e 100%);
+    background:radial-gradient(circle at 25% 8%, #1a6e66 0%, var(--ceu) 48%, #05201f 100%);
     background-attachment:fixed;
     color:var(--branco);
     min-height:100%;
@@ -47,16 +49,16 @@
   h1{font-size:clamp(28px,7vw,46px);text-align:center;color:var(--estrela);text-shadow:3px 3px 0 #00000040;letter-spacing:1px}
   h1 .rocket{display:inline-block;animation:flutua 2s ease-in-out infinite}
   @keyframes flutua{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-8px) rotate(-2deg)}}
-  .sub{text-align:center;color:#c7d6ff;margin-top:4px;font-size:15px}
+  .sub{text-align:center;color:#bfe9e1;margin-top:4px;font-size:15px}
   .card{
-    background:linear-gradient(180deg,var(--ceu2),#0e2557);
-    border:3px solid #2b4ea0;border-radius:24px;padding:22px;margin-top:22px;
+    background:linear-gradient(180deg,var(--ceu2),#0d3b3a);
+    border:3px solid #1f7a72;border-radius:24px;padding:22px;margin-top:22px;
     box-shadow:var(--sombra);
   }
-  label{display:block;font-weight:bold;margin:14px 0 6px;color:#cfe0ff}
+  label{display:block;font-weight:bold;margin:14px 0 6px;color:#bfe9e1}
   input{
-    width:100%;padding:14px 16px;border-radius:14px;border:3px solid #2b4ea0;
-    background:#0a1c45;color:#fff;font-size:17px;font-family:inherit;
+    width:100%;padding:14px 16px;border-radius:14px;border:3px solid #1f7a72;
+    background:#0c302f;color:#fff;font-size:17px;font-family:inherit;
   }
   input:focus{outline:none;border-color:var(--estrela)}
   .erro-msg{color:var(--erro);font-size:14px;margin-top:6px;min-height:18px}
@@ -70,8 +72,8 @@
     box-shadow:0 6px 0 #c43e42;margin-top:18px;
   }
   .btn-grande:active{box-shadow:0 2px 0 #c43e42}
-  .btn-sec{background:var(--roxo);box-shadow:0 6px 0 #6e44c9;color:#fff}
-  .btn-sec:active{box-shadow:0 2px 0 #6e44c9}
+  .btn-sec{background:var(--roxo);box-shadow:0 6px 0 #1d8475;color:#fff}
+  .btn-sec:active{box-shadow:0 2px 0 #1d8475}
   .btn-verde{background:var(--acerto);box-shadow:0 6px 0 #25a35f;color:#06371f}
   .btn-verde:active{box-shadow:0 2px 0 #25a35f}
   .hidden{display:none!important}
@@ -80,31 +82,31 @@
   .tab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:10px;margin-top:10px}
   /* botões de operação */
   .op-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-  .op-btn{padding:16px 10px;font-size:16px;border-radius:16px;background:#0a1c45;border:3px solid #2b4ea0;color:#cfe0ff;font-family:inherit;font-weight:bold}
+  .op-btn{padding:16px 10px;font-size:16px;border-radius:16px;background:#0c302f;border:3px solid #1f7a72;color:#bfe9e1;font-family:inherit;font-weight:bold}
   .op-btn.on{background:var(--roxo);color:#fff;border-color:#fff;transform:scale(1.02)}
   .nivel-btn.on{background:var(--estrela)!important;color:#3a2c00!important}
   .tab-chip{
     padding:16px 0;text-align:center;font-size:22px;font-weight:bold;border-radius:16px;
-    background:#0a1c45;border:3px solid #2b4ea0;color:#cfe0ff;cursor:pointer;user-select:none;
+    background:#0c302f;border:3px solid #1f7a72;color:#bfe9e1;cursor:pointer;user-select:none;
   }
   .tab-chip.on{background:var(--estrela);color:#3a2c00;border-color:#fff;transform:scale(1.04)}
   .mini-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-  .mini-row button{flex:1;padding:12px;font-size:14px;background:#0a1c45;border:2px solid #2b4ea0;color:#cfe0ff}
+  .mini-row button{flex:1;padding:12px;font-size:14px;background:#0c302f;border:2px solid #1f7a72;color:#bfe9e1}
 
   /* jogo */
   .hud{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-  .pill{background:#0a1c45;border:3px solid #2b4ea0;border-radius:999px;padding:8px 16px;font-weight:bold}
+  .pill{background:#0c302f;border:3px solid #1f7a72;border-radius:999px;padding:8px 16px;font-weight:bold}
   .pill.estrela{border-color:var(--estrela);color:var(--estrela)}
   .pill.vida{border-color:var(--foguete)}
-  .pill.sair{border-color:var(--foguete);color:var(--foguete);cursor:pointer;background:#0a1c45;font-family:inherit}
+  .pill.sair{border-color:var(--foguete);color:var(--foguete);cursor:pointer;background:#0c302f;font-family:inherit}
   .pill.sair:active{transform:translateY(2px)}
-  .barra{height:14px;background:#0a1c45;border-radius:999px;overflow:hidden;border:2px solid #2b4ea0;margin-bottom:16px}
+  .barra{height:14px;background:#0c302f;border-radius:999px;overflow:hidden;border:2px solid #1f7a72;margin-bottom:16px}
   .barra>i{display:block;height:100%;background:linear-gradient(90deg,var(--planeta),var(--estrela));width:0;transition:width .3s}
   .conta{font-size:clamp(46px,15vw,90px);text-align:center;font-weight:bold;color:#fff;text-shadow:4px 4px 0 #00000050;margin:10px 0 6px}
   /* barra de tempo do bônus */
-  .tempo-rotulo{display:flex;justify-content:space-between;font-size:13px;font-weight:bold;color:#cfe0ff;margin:4px 2px 5px}
+  .tempo-rotulo{display:flex;justify-content:space-between;font-size:13px;font-weight:bold;color:#bfe9e1;margin:4px 2px 5px}
   .tempo-rotulo #j-tempo-seg{color:var(--estrela)}
-  .tempo-barra{height:16px;background:#0a1c45;border-radius:999px;overflow:hidden;border:2px solid #2b4ea0;margin-bottom:14px}
+  .tempo-barra{height:16px;background:#0c302f;border-radius:999px;overflow:hidden;border:2px solid #1f7a72;margin-bottom:14px}
   .tempo-barra>i{display:block;height:100%;width:100%;border-radius:999px;background:var(--acerto);transition:width .1s linear,background-color .3s}
   .tempo-barra.acabando{animation:piscaTempo .45s steps(1) infinite}
   @keyframes piscaTempo{0%{opacity:1}50%{opacity:.25}100%{opacity:1}}
@@ -113,16 +115,16 @@
   .resposta-box input{font-size:34px;text-align:center;font-weight:bold;letter-spacing:2px}
   .feedback{text-align:center;font-size:22px;font-weight:bold;min-height:30px;margin-top:14px}
   .teclado{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
-  .teclado button{padding:18px;font-size:24px;background:#13316f;border:3px solid #2b4ea0;color:#fff;box-shadow:0 5px 0 #0a1c45}
-  .teclado button:active{box-shadow:0 1px 0 #0a1c45}
-  .teclado .acao{background:var(--roxo);box-shadow:0 5px 0 #6e44c9}
+  .teclado button{padding:18px;font-size:24px;background:#12514d;border:3px solid #1f7a72;color:#fff;box-shadow:0 5px 0 #0c302f}
+  .teclado button:active{box-shadow:0 1px 0 #0c302f}
+  .teclado .acao{background:var(--roxo);box-shadow:0 5px 0 #1d8475}
 
   /* resultado */
-  .stat{display:flex;justify-content:space-between;padding:12px 4px;border-bottom:2px dashed #2b4ea0;font-size:17px}
+  .stat{display:flex;justify-content:space-between;padding:12px 4px;border-bottom:2px dashed #1f7a72;font-size:17px}
   .stat b{color:var(--estrela)}
   /* estrelas do resultado */
   .estrelas-result{display:flex;justify-content:center;gap:8px;margin:4px 0 6px}
-  .estrelas-result .est{font-size:clamp(52px,16vw,84px);line-height:1;color:#22366e;transition:none;transform:scale(0)}
+  .estrelas-result .est{font-size:clamp(52px,16vw,84px);line-height:1;color:#235f59;transition:none;transform:scale(0)}
   .estrelas-result .est.cheia{color:var(--estrela);text-shadow:0 0 18px rgba(255,230,109,.8)}
   .estrelas-result .est.surge{animation:estrelaPop .5s cubic-bezier(.2,1.4,.4,1) forwards}
   .estrelas-result .est.surge.cheia{animation:estrelaPop .5s cubic-bezier(.2,1.4,.4,1) forwards, brilho 1.4s ease-in-out .5s infinite}
@@ -131,46 +133,46 @@
   /* placar */
   .placar{text-align:center;margin:8px 0 4px}
   .placar-num{font-size:clamp(56px,18vw,88px);font-weight:bold;color:var(--estrela);text-shadow:3px 3px 0 #00000040;line-height:1}
-  .placar-de{font-size:clamp(22px,6vw,34px);color:#7e93c9}
-  .placar-lbl{font-size:16px;color:#cfe0ff;letter-spacing:2px;text-transform:uppercase}
+  .placar-de{font-size:clamp(22px,6vw,34px);color:#5f968f}
+  .placar-lbl{font-size:16px;color:#bfe9e1;letter-spacing:2px;text-transform:uppercase}
   .acertos-destaque{text-align:center;font-size:20px;font-weight:bold;color:var(--branco);margin:6px 0 12px}
-  .pontos-quebra{background:#0a1c45;border:2px solid #2b4ea0;border-radius:14px;padding:6px 14px;margin-bottom:12px}
-  .pontos-quebra .linha{display:flex;justify-content:space-between;padding:8px 0;font-size:15px;border-bottom:1px solid #1c356e}
+  .pontos-quebra{background:#0c302f;border:2px solid #1f7a72;border-radius:14px;padding:6px 14px;margin-bottom:12px}
+  .pontos-quebra .linha{display:flex;justify-content:space-between;padding:8px 0;font-size:15px;border-bottom:1px solid #1f7a72}
   .pontos-quebra .linha:last-child{border-bottom:none}
   .pontos-quebra .linha b{color:var(--estrela)}
   .pontos-quebra .linha.zero{opacity:.4}
   .pontos-quebra .linha.destaque{font-size:18px}
   .pontos-quebra .linha.destaque b{font-size:20px}
-  .pontos-quebra .linha.sep{border-top:2px dashed #2b4ea0;margin-top:2px}
+  .pontos-quebra .linha.sep{border-top:2px dashed #1f7a72;margin-top:2px}
 
   /* historico */
-  .hist-item{background:#0a1c45;border:2px solid #2b4ea0;border-radius:14px;padding:12px 14px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-  .hist-item .data{font-size:13px;color:#9fb4e8}
+  .hist-item{background:#0c302f;border:2px solid #1f7a72;border-radius:14px;padding:12px 14px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .hist-item .data{font-size:13px;color:#8fc7bf}
   .hist-item .pts{font-size:22px;font-weight:bold;color:var(--estrela)}
 
   /* perfis */
-  .perfil-item{display:flex;align-items:center;gap:14px;background:#0a1c45;border:3px solid #2b4ea0;border-radius:18px;padding:14px;margin-top:12px;cursor:pointer}
+  .perfil-item{display:flex;align-items:center;gap:14px;background:#0c302f;border:3px solid #1f7a72;border-radius:18px;padding:14px;margin-top:12px;cursor:pointer}
   .perfil-item:active{transform:translateY(2px)}
-  .perfil-item .avatar{font-size:34px;width:54px;height:54px;display:flex;align-items:center;justify-content:center;background:#13316f;border-radius:50%;flex-shrink:0}
+  .perfil-item .avatar{font-size:34px;width:54px;height:54px;display:flex;align-items:center;justify-content:center;background:#12514d;border-radius:50%;flex-shrink:0}
   .perfil-item .info{flex:1}
   .perfil-item .info .ap{font-size:20px;font-weight:bold;color:var(--estrela)}
-  .perfil-item .info .det{font-size:13px;color:#9fb4e8}
+  .perfil-item .info .det{font-size:13px;color:#8fc7bf}
   .perfil-item .apagar{background:transparent;border:none;color:var(--foguete);font-size:22px;padding:6px 10px;cursor:pointer}
-  .vazio{text-align:center;color:#9fb4e8;padding:20px 0}
+  .vazio{text-align:center;color:#8fc7bf;padding:20px 0}
 
   .topo-nav{display:flex;gap:10px;margin-top:18px}
-  .topo-nav button{flex:1;padding:14px;font-size:15px;background:#13316f;border:2px solid #2b4ea0;color:#cfe0ff}
+  .topo-nav button{flex:1;padding:14px;font-size:15px;background:#12514d;border:2px solid #1f7a72;color:#bfe9e1}
 
   .saudacao{text-align:center;margin-bottom:6px}
   .saudacao .nome{color:var(--estrela);font-size:24px;font-weight:bold}
-  .saudacao .idade{color:#cfe0ff;font-size:15px}
+  .saudacao .idade{color:#bfe9e1;font-size:15px}
 
   /* confete */
   .confete{position:fixed;top:-10px;width:10px;height:16px;z-index:50;pointer-events:none}
   @keyframes cai{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
 
   /* rodapé */
-  .rodape{text-align:center;color:#8fa3d6;font-size:13px;margin-top:26px;padding:14px 0 max(10px,env(safe-area-inset-bottom))}
+  .rodape{text-align:center;color:#6fa39b;font-size:13px;margin-top:26px;padding:14px 0 max(10px,env(safe-area-inset-bottom))}
   .rodape b{color:var(--estrela);font-weight:bold}
 
   /* ---- responsivo: celulares ---- */
@@ -213,7 +215,7 @@
 <body>
 <div class="estrelas" id="estrelas"></div>
 <div class="wrap">
-  <h1><span class="rocket">🚀</span> Tabuê</h1>
+  <h1><span class="rocket"><svg viewBox="0 0 120 120" width="1em" height="1em" style="vertical-align:-0.18em" xmlns="http://www.w3.org/2000/svg"><path d="M48 92 Q60 120 72 92 Q60 104 48 92Z" fill="#ffd23f"/><path d="M53 92 Q60 110 67 92 Q60 100 53 92Z" fill="#ff8c42"/><path d="M60 12 C44 24 40 50 42 72 L78 72 C80 50 76 24 60 12Z" fill="#f7faff"/><path d="M60 12 C68 20 74 38 76 58 L60 58 Z" fill="#dbe6ff"/><circle cx="60" cy="42" r="11" fill="#16c2a3"/><circle cx="60" cy="42" r="11" fill="none" stroke="#0e9e85" stroke-width="3"/><circle cx="56" cy="38" r="3.2" fill="#bafff0"/><path d="M42 60 C30 66 28 80 30 86 L42 74 Z" fill="#ff5a5f"/><path d="M78 60 C90 66 92 80 90 86 L78 74 Z" fill="#ff5a5f"/><path d="M60 12 C55 16 52 22 51 28 C57 24 63 24 69 28 C68 22 65 16 60 12Z" fill="#ff5a5f"/><rect x="43" y="66" width="34" height="6" rx="3" fill="#16c2a3"/></svg></span> Tabuê</h1>
   <p class="sub">A tabuada que vira jogo!</p>
 
   <!-- SELEÇÃO DE PERFIL -->
@@ -236,7 +238,7 @@
     <input id="c-nasc" type="date">
     <div class="erro-msg" id="cad-erro"></div>
     <button class="btn-grande" onclick="salvarCadastro()">🚀 Começar a jogar</button>
-    <button id="cad-voltar" class="topo-nav-btn hidden" style="width:100%;padding:14px;margin-top:10px;background:#13316f;border:2px solid #2b4ea0;color:#cfe0ff;font-size:15px" onclick="mostrar('tela-perfis');renderPerfis()">⬅️ Voltar para a lista</button>
+    <button id="cad-voltar" class="topo-nav-btn hidden" style="width:100%;padding:14px;margin-top:10px;background:#12514d;border:2px solid #1f7a72;color:#bfe9e1;font-size:15px" onclick="mostrar('tela-perfis');renderPerfis()">⬅️ Voltar para a lista</button>
   </section>
 
   <!-- MENU / ESCOLHA -->
@@ -484,8 +486,8 @@ function montarMenu(){
   opcoesQtd.forEach(v=>{
     const b=document.createElement('button');
     b.textContent=v+' perg.';
-    b.style.background=v===qtdEscolhida?'var(--estrela)':'#0a1c45';
-    b.style.color=v===qtdEscolhida?'#3a2c00':'#cfe0ff';
+    b.style.background=v===qtdEscolhida?'var(--estrela)':'#0c302f';
+    b.style.color=v===qtdEscolhida?'#3a2c00':'#bfe9e1';
     b.onclick=()=>{qtdEscolhida=v;montarMenu()};
     q.appendChild(b);
   });
@@ -701,7 +703,7 @@ function animarEstrelas(qtd){
 
 /* ---------- confete ---------- */
 function confete(){
-  const cores=['#ffe66d','#ff5a5f','#5be8c6','#9b6bff','#3ddc84'];
+  const cores=['#ffd23f','#ff5a5f','#5be8c6','#2bb5a0','#3ddc84'];
   const d=document.createElement('div');
   d.className='confete';
   d.style.left=Math.random()*100+'vw';
