@@ -1,5 +1,5 @@
 // Service Worker do Tabuê — permite usar offline
-const CACHE = 'tabue-v2';
+const CACHE = 'tabue-v3';
 const ARQUIVOS = [
   './',
   './index.html',
